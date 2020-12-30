@@ -143,7 +143,7 @@ sepBy p sep         = sepBy1 p sep <|> return []
 
 sepBy1 :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m sep -> ParsecT s u m [a]
 {-# INLINABLE sepBy1 #-}
-sepBy1 p sep        = (:) <$> p <*> (many (sep *> p))
+sepBy1 p sep        = (:) <$> p <*> many (sep *> p)
 
 
 -- | @sepEndBy1 p sep@ parses /one/ or more occurrences of @p@,
