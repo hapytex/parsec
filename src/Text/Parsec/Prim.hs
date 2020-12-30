@@ -412,6 +412,7 @@ instance MonadTrans (ParsecT s u) where
 
 infix  0 <?>
 infixr 1 <|>
+infixl 3 |$>
 
 -- | The parser @p \<?> msg@ behaves as parser @p@, but whenever the
 -- parser @p@ fails /without consuming any input/, it replaces expect

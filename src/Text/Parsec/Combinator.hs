@@ -71,7 +71,7 @@ choice              = foldr (<|>) mzero
 
 option :: (Stream s m t) => a -> ParsecT s u m a -> ParsecT s u m a
 {-# INLINABLE option #-}
-option x p          = p <|> return x
+option              = flip (|$>)
 
 -- | @optionMaybe p@ tries to apply parser @p@.  If @p@ fails without
 -- consuming input, it return 'Nothing', otherwise it returns
@@ -87,7 +87,7 @@ optionMaybe p       = option Nothing (Just <$> p)
 
 optional :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m ()
 {-# INLINABLE optional #-}
-optional p          = (() <$ p) <|> return ()
+optional p          = (() <$ p) |$> ()
 
 -- | @between open close p@ parses @open@, followed by @p@ and @close@.
 -- Returns the value returned by @p@.
@@ -136,7 +136,7 @@ many p              = scan id
 
 sepBy :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m sep -> ParsecT s u m [a]
 {-# INLINABLE sepBy #-}
-sepBy p sep         = sepBy1 p sep <|> return []
+sepBy p sep         = sepBy1 p sep |$> []
 
 -- | @sepBy1 p sep@ parses /one/ or more occurrences of @p@, separated
 -- by @sep@. Returns a list of values returned by @p@.
@@ -153,7 +153,7 @@ sepBy1 p sep        = (:) <$> p <*> many (sep *> p)
 sepEndBy1 :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m sep -> ParsecT s u m [a]
 {-# INLINABLE sepEndBy1 #-}
 sepEndBy1 p sep     = do{ x <- p
-                        ; (sep *> fmap (x:) (sepEndBy p sep)) <|> return [x]
+                        ; (sep *> fmap (x:) (sepEndBy p sep)) |$> [x]
                         }
 
 -- | @sepEndBy p sep@ parses /zero/ or more occurrences of @p@,
@@ -164,7 +164,7 @@ sepEndBy1 p sep     = do{ x <- p
 
 sepEndBy :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m sep -> ParsecT s u m [a]
 {-# INLINABLE sepEndBy #-}
-sepEndBy p sep      = sepEndBy1 p sep <|> return []
+sepEndBy p sep      = sepEndBy1 p sep |$> []
 
 
 -- | @endBy1 p sep@ parses /one/ or more occurrences of @p@, separated
@@ -199,7 +199,7 @@ count               = replicateM
 
 chainr :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m (a -> a -> a) -> a -> ParsecT s u m a
 {-# INLINABLE chainr #-}
-chainr p op x       = chainr1 p op <|> return x
+chainr p op x       = chainr1 p op |$> x
 
 -- | @chainl p op x@ parses /zero/ or more occurrences of @p@,
 -- separated by @op@. Returns a value obtained by a /left/ associative
@@ -209,7 +209,7 @@ chainr p op x       = chainr1 p op <|> return x
 
 chainl :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m (a -> a -> a) -> a -> ParsecT s u m a
 {-# INLINABLE chainl #-}
-chainl p op x       = chainl1 p op <|> return x
+chainl p op         = (chainl1 p op |$>)
 
 -- | @chainl1 p op@ parses /one/ or more occurrences of @p@,
 -- separated by @op@ Returns a value obtained by a /left/ associative
@@ -229,12 +229,12 @@ chainl p op x       = chainl1 p op <|> return x
 
 chainl1 :: (Stream s m t) => ParsecT s u m a -> ParsecT s u m (a -> a -> a) -> ParsecT s u m a
 {-# INLINABLE chainl1 #-}
-chainl1 p op        = do{ x <- p; rest x }
+chainl1 p op        = p >>= rest
                     where
                       rest x    = do{ f <- op
                                     ; p >>= rest . f x
                                     }
-                                <|> return x
+                                |$> x
 
 -- | @chainr1 p op x@ parses /one/ or more occurrences of |p|,
 -- separated by @op@ Returns a value obtained by a /right/ associative
@@ -249,7 +249,7 @@ chainr1 p op        = scan
                       rest x    = do {
                           f <- op;
                           f x <$> scan
-                      } <|> return x
+                      } |$> x
 
 -----------------------------------------------------------
 -- Tricky combinators
@@ -296,7 +296,7 @@ eof                 = notFollowedBy anyToken <?> "end of input"
 notFollowedBy :: (Stream s m t, Show a) => ParsecT s u m a -> ParsecT s u m ()
 {-# INLINABLE notFollowedBy #-}
 notFollowedBy p     = try ((try p >>= unexpected . show)
-                           <|> return ()
+                           |$> ()
                           )
 
 -- | @manyTill p end@ applies parser @p@ /zero/ or more times until

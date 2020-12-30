@@ -129,9 +129,9 @@ buildExpressionParser operators simpleExpr
                              ; return (post (pre x))
                              }
 
-              postfixP   = postfixOp <|> return id
+              postfixP   = postfixOp |$> id
 
-              prefixP    = prefixOp <|> return id
+              prefixP    = prefixOp |$> id
 
               rassocP x  = do{ f <- rassocOp
                              ; f x <$> (termP >>= rassocP1)
@@ -140,7 +140,7 @@ buildExpressionParser operators simpleExpr
                            <|> ambiguousNon
                            -- <|> return x
 
-              rassocP1 x = rassocP x  <|> return x
+              rassocP1 x = rassocP x |$> x
 
               lassocP x  = do{ f <- lassocOp
                              ; y <- termP
@@ -150,19 +150,19 @@ buildExpressionParser operators simpleExpr
                            <|> ambiguousNon
                            -- <|> return x
 
-              lassocP1 x = lassocP x <|> return x
+              lassocP1 x = lassocP x |$> x
 
               nassocP x  = do{ f <- nassocOp
                              ; y <- termP
                              ;    ambiguousRight
                               <|> ambiguousLeft
                               <|> ambiguousNon
-                              <|> return (f x y)
+                              |$> f x y
                              }
                            -- <|> return x
 
            in  do{ x <- termP
-                 ; rassocP x <|> lassocP  x <|> nassocP x <|> return x
+                 ; rassocP x <|> lassocP  x <|> nassocP x |$> x
                    <?> "operator"
                  }
 

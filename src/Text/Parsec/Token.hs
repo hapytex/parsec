@@ -527,7 +527,7 @@ makeTokenParser languageDef
     zeroNumFloat    =  Left <$> (hexadecimal <|> octal)
                     <|> decimalFloat
                     <|> fractFloat (0 :: Integer)
-                    <|> return (Left 0)
+                    |$> Left 0
 
     decimalFloat    = do{ n <- decimal
                         ; option (Left n)
@@ -554,7 +554,7 @@ makeTokenParser languageDef
                       <?> "fraction"
 
     exponent'       = do{ _ <- oneOf "eE"
-                        ; sign' <- fmap (:[]) (oneOf "+-") <|> return ""
+                        ; sign' <- fmap (:[]) (oneOf "+-") |$> ""
                         ; e <- decimal <?> "exponent"
                         ; return ('e' : sign' ++ show e)
                         }
@@ -568,12 +568,12 @@ makeTokenParser languageDef
 
     sign            =   (negate <$ char '-')
                     <|> (id <$ char '+')
-                    <|> return id
+                    |$> id
 
     nat             = zeroNumber <|> decimal
 
     zeroNumber      = do{ _ <- char '0'
-                        ; hexadecimal <|> octal <|> decimal <|> return 0
+                        ; hexadecimal <|> octal <|> decimal |$> 0
                         }
                       <?> ""
 
