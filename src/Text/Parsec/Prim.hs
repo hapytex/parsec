@@ -667,9 +667,7 @@ unexpectError = newErrorMessage . SysUnExpect
 -- >                  }
 
 many :: ParsecT s u m a -> ParsecT s u m [a]
-many p
-  = do xs <- manyAccum (:) p
-       return (reverse xs)
+many p = reverse <$> manyAccum (:) p
 
 -- | @skipMany p@ applies the parser @p@ /zero/ or more times, skipping
 -- its result.

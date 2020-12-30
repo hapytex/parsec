@@ -435,11 +435,10 @@ makeTokenParser languageDef
 
 
     stringLiteral   = lexeme (
-                      do{ str <- between (char '"')
-                                         (char '"' <?> "end of string")
-                                         (many stringChar)
-                        ; return (foldr (maybe id (:)) "" str)
-                        }
+                          foldr (maybe id (:)) "" <$>
+                          between (char '"')
+                              (char '"' <?> "end of string")
+                              (many stringChar)
                       <?> "literal string")
 
     stringChar      =   Just <$> stringLetter
@@ -480,11 +479,11 @@ makeTokenParser languageDef
 
     charEsc         = choice (map parseEsc escMap)
                     where
-                      parseEsc (c,code)     = do{ _ <- char c; return code }
+                      parseEsc (c,code)     = code <$ char c
 
     charAscii       = choice (map parseAscii asciiMap)
                     where
-                      parseAscii (asc,code) = try (do{ _ <- string asc; return code })
+                      parseAscii (asc,code) = try (code <$ string asc)
 
 
     -- escape code tables
@@ -525,9 +524,7 @@ makeTokenParser languageDef
                         }
                       <|> decimalFloat
 
-    zeroNumFloat    =  do{ n <- hexadecimal <|> octal
-                         ; return (Left n)
-                         }
+    zeroNumFloat    =  Left <$> (hexadecimal <|> octal)
                     <|> decimalFloat
                     <|> fractFloat (0 :: Integer)
                     <|> return (Left 0)
@@ -537,9 +534,7 @@ makeTokenParser languageDef
                                  (fractFloat n)
                         }
 
-    fractFloat n    = do{ f <- fractExponent n
-                        ; return (Right f)
-                        }
+    fractFloat n    = Right <$> fractExponent n
 
     fractExponent n = do{ fract <- fraction
                         ; expo  <- option "" exponent'
@@ -555,10 +550,7 @@ makeTokenParser languageDef
                             [(x, "")] -> return x
                             _         -> parserZero
 
-    fraction        = do{ _ <- char '.'
-                        ; digits <- many1 digit <?> "fraction"
-                        ; return ('.' : digits)
-                        }
+    fraction        = (char '.' >> (('.':) <$> (many1 digit <?> "fraction")))
                       <?> "fraction"
 
     exponent'       = do{ _ <- oneOf "eE"
@@ -702,7 +694,6 @@ makeTokenParser languageDef
     oneLineComment =
         do{ _ <- try (string (commentLine languageDef))
           ; skipMany (satisfy (/= '\n'))
-          ; return ()
           }
 
     multiLineComment =

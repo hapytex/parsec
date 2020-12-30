@@ -189,8 +189,7 @@ endBy p sep         = many (p <* sep)
 
 count :: (Stream s m t) => Int -> ParsecT s u m a -> ParsecT s u m [a]
 {-# INLINABLE count #-}
-count n p           | n <= 0    = return []
-                    | otherwise = replicateM n p
+count               = replicateM
 
 -- | @chainr p op x@ parses /zero/ or more occurrences of @p@,
 -- separated by @op@ Returns a value obtained by a /right/ associative

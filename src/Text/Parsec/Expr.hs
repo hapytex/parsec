@@ -24,6 +24,10 @@ module Text.Parsec.Expr
 
 import Data.Typeable ( Typeable )
 
+#if __GLASGOW_HASKELL__ < 710
+import Data.Functor((<$>))
+#endif
+
 import Text.Parsec.Prim
 import Text.Parsec.Combinator
 
@@ -130,8 +134,7 @@ buildExpressionParser operators simpleExpr
               prefixP    = prefixOp <|> return id
 
               rassocP x  = do{ f <- rassocOp
-                             ; y  <- do{ z <- termP; rassocP1 z }
-                             ; return (f x y)
+                             ; f x <$> (termP >>= rassocP1)
                              }
                            <|> ambiguousLeft
                            <|> ambiguousNon

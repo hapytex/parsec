@@ -44,6 +44,9 @@ module Text.Parsec.Perm
 import Text.Parsec
 
 import Control.Monad.Identity
+#if __GLASGOW_HASKELL__ < 710
+import Data.Functor((<$>))
+#endif
 #if MIN_VERSION_base(4,7,0)
 import Data.Typeable ( Typeable )
 #else
@@ -175,8 +178,7 @@ permute (Perm def xs)
 
     branch (Branch perm p)
       = do{ x <- p
-          ; f <- permute perm
-          ; return (f x)
+          ; ($ x) <$> permute perm
           }
 
 -- build permutation trees
