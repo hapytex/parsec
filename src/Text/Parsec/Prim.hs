@@ -44,8 +44,10 @@ module Text.Parsec.Prim
     , parserFail
     , parserZero
     , parserPlus
+    , parserPlusReturn
     , (<?>)
     , (<|>)
+    , (|$>)
     , label
     , labels
     , lookAhead
@@ -254,7 +256,7 @@ instance Functor (Reply s u) where
     fmap _ (Error e) = Error e -- XXX
 
 instance Functor (ParsecT s u m) where
-    fmap f p = parsecMap f p
+    fmap = parsecMap
 
 parsecMap :: (a -> b) -> ParsecT s u m a -> ParsecT s u m b
 parsecMap f p
@@ -367,7 +369,7 @@ parserFail msg
 
 instance MonadPlus (ParsecT s u m) where
     mzero = parserZero
-    mplus p1 p2 = parserPlus p1 p2
+    mplus = parserPlus
 
 -- | @parserZero@ always fails without consuming any input. @parserZero@ is defined
 -- equal to the 'mzero' member of the 'MonadPlus' class and to the 'Control.Applicative.empty' member
@@ -389,6 +391,19 @@ parserPlus m n
                   neerr err' = eerr $ mergeError err err'
               in unParser n s cok cerr neok neerr
       in unParser m s cok cerr eok meerr
+
+-- |@parserPlusReturn a b@ is equivant to @a <|> return b@, but is optimized to
+-- prevent wrapping and unwrapping.
+parserPlusReturn :: ParsecT s u m a -> a -> ParsecT s u m a
+{-# INLINE parserPlusReturn #-}
+parserPlusReturn m c
+    = ParsecT $ \s cok cerr eok _ -> unParser m s cok cerr eok (eok c s . (`mergeError` unknownError s))
+
+-- |@a |$> b@ is equivant to @a <|> return b@, but is optimized to
+-- prevent wrapping and unwrapping.
+(|$>) :: ParsecT s u m a -> a -> ParsecT s u m a
+(|$>) = parserPlusReturn
+
 
 instance MonadTrans (ParsecT s u) where
     lift amb = ParsecT $ \s _ _ eok _ -> do

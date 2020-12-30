@@ -327,7 +327,7 @@ manyTill p end      = scan
 -- @since 3.1.12.0
 parserTrace :: (Show t, Stream s m t) => String -> ParsecT s u m ()
 {-# INLINABLE parserTrace #-}
-parserTrace s = pt <|> return ()
+parserTrace s = pt |$> ()
     where
         pt = try $ do
            x <- try $ many1 anyToken
